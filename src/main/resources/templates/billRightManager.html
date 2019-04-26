@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<html>
+<head>
+<meta charset="UTF-8">
+<title>记账管理-右边数据表格</title>
+	<!-- 引入样式 -->
+	<link href="/resources/layui/css/layui.css" rel="stylesheet" type="text/css">
+</head>
+<body style="margin: 10px">
+	<!-- 查询条件开始 -->
+	<form action="" class="layui-form" id="searchFrm" lay-filter="searchFrm">
+		<div class="layui-form-item">
+			<div class="layui-inline">
+				<label class="layui-form-label" >搜索选择框:</label>
+				<div class="layui-input-inline">
+					<select name="typeid" id="typeid">
+					</select>
+				</div>
+			</div>
+			<div class="layui-inline">
+				<label class="layui-form-label" >开始时间</label>
+				<div class="layui-input-inline">
+					<input type="text" name="startTime"  id="startTime" autocomplete="off" class="layui-input">
+				</div>
+			</div>
+			<div class="layui-inline">
+				<label class="layui-form-label" >结束时间</label>
+				<div class="layui-input-inline">
+					<input type="text" name="endTime" id="endTime"  autocomplete="off" class="layui-input">
+				</div>
+			</div>
+		</div>
+		<div class="layui-form-item" style="text-align: center;">
+			<div class="layui-input-block">
+				<button type="button" class="layui-btn" lay-submit=""  lay-filter="doSearch">查询</button>
+				<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+			</div>
+		</div>
+	</form>
+	<!-- 查询条件结束 -->
+	
+	<!-- 数据表格开始 -->
+	<table class="layui-hide" id="billTable" lay-filter="billTable"></table>
+	
+	<div id="tableToolbar" style="display: none;">
+		<button type="button" class="layui-btn" lay-event="add">添加</button>
+	</div>
+	<div id="cellToolbar" style="display: none;">
+		<button type="button" class="layui-btn layui-btn-sm"  lay-event="update">修改</button>
+		<button type="button" class="layui-btn layui-btn-danger layui-btn-sm" lay-event="delete">删除</button>
+	</div>
+	<!-- 数据表格结束-->
+
+	<!-- 添加，修改弹出层开始 -->
+	<div id="addOrUpdateDiv" style="display: none;padding: 10px">
+		<form class="layui-form" action="" id="dataFrm" lay-filter="dataFrm">
+			<div class="layui-form-item">
+				<div class="layui-inline">
+					<input type="hidden" name="id">
+					<label class="layui-form-label">单选框</label>
+					<div class="layui-input-block" id="dddd">
+					</div>
+				</div>
+			</div>
+
+			<div class="layui-form-item">
+				<label class="layui-form-label">标题</label>
+				<div class="layui-input-block">
+					<input type="text" name="title"  autocomplete="off" class="layui-input">
+				</div>
+			</div>
+
+			<div class="layui-form-item">
+				<label class="layui-form-label">日期</label>
+				<div class="layui-input-block">
+					<input type="text" name="time" id="times" autocomplete="off" class="layui-input">
+				</div>
+			</div>
+
+			<div class="layui-form-item">
+				<label class="layui-form-label">金额</label>
+				<div class="layui-input-block">
+					<input type="text" name="price"  autocomplete="off" class="layui-input">
+				</div>
+			</div>
+
+			<div class="layui-form-item">
+				<label class="layui-form-label">描述</label>
+				<div class="layui-input-block">
+					<textarea placeholder="请输入内容" name="remark"  class="layui-textarea"></textarea>
+				</div>
+			</div>
+
+			<div class="layui-form-item">
+				<div class="layui-input-block">
+					<button type="submit" class="layui-btn" lay-submit="" lay-filter="doSubmit">提交</button>
+					<button type="reset" class="layui-btn layui-btn-primary">重置</button>
+				</div>
+			</div>
+		</form>
+	</div>
+	<!-- 添加，修改弹出层结束 -->
+
+	<!-- 引入js -->
+	<script type="text/javascript" src="/resources/layui/layui.js"></script>
+	<script type="text/javascript">
+	var tableIns;
+	layui.use(['layer','jquery','table','form','laydate'], function(){
+			var $ = layui.jquery;
+			var layer = layui.layer;
+			var table=layui.table;
+			var laydate=layui.laydate;
+			var form=layui.form;
+
+			//渲染时间选择器
+			laydate.render({
+				elem:'#startTime',
+				type:'datetime'
+			});
+			laydate.render({
+				elem:'#endTime',
+				type:'datetime'
+			});
+			laydate.render({
+				elem:'#times',
+				type:'datetime'
+			});
+
+			//加载列表数据
+			tableIns=table.render({
+				elem: '#billTable'   //渲染的目标对象
+				,url:'/sys/bills/loadAllBill' //数据接口
+				,height:"full-200"
+				//,totalRow:true  //开启合计行
+				,toolbar:"#tableToolbar"
+				,page:true//设置开启分页
+				,cols: [ [
+					{type:'checkbox'}
+					,{field:'id', title: 'ID', sort: true,align:"center"}
+					,{field:'title', title: '标题',align:"center"}
+					,{field:'typename',  title: '类型', align:"center"/*,templet:function(d){
+							var typename;
+							if(d.typeid==1){
+								typename="<font>支出</font>";
+							}else if(d.typeid==2){
+								typename="<font>收入</font>";
+							}else if(d.typeid==3){
+								typename="<font>转账</font>";
+							}else if(d.typeid==4){
+								typeidname="<font>借出</font>";
+							}else if(d.typeid==5){
+								typename="<font>借入</font>";
+							}else if(d.typeid==6){
+								typename="<font>还入</font>";
+							}else if(d.typeid==7){
+								typename="<font>还出</font>";
+							}
+							return typename;
+						}*/}
+					,{field:'time', title: '时间',align:"center"}
+					,{field:'price', title: '金额',align:"center"}
+					,{field:'remark', title: '备注',align:"center"}
+					,{width:150, title: '操作',fixed:"right",align:'center',toolbar:'#cellToolbar'}
+				] ]
+			});
+
+			//监控查询事件
+			form.on("submit(doSearch)",function(data){
+				var params=$("#searchFrm").serialize();
+				tableIns.reload({
+					url:'/sys/bills/loadAllBill?'+params
+				});
+				//刷新表格
+				return false;
+			});
+
+			//监听表头事件
+			table.on('toolbar(billTable)', function(obj){
+				var checkStatus = table.checkStatus(obj.config.id);
+				switch(obj.event){
+					case 'add':
+						openAddBill();
+						break;
+				};
+			});
+
+			//监听表体事件
+			table.on('tool(billTable)', function(obj){
+				switch(obj.event){
+					case 'update':
+						openUpdateBill(obj.data);
+						break;
+					case 'delete':
+						deleteBill(obj.data);
+						break;
+				};
+			});
+
+			var url;
+			var index;
+			//打开添加页面
+			function openAddBill(){
+				index = layer.open({
+					type : 1,
+					title : '添加记账',
+					content : $("#addOrUpdateDiv"),
+					skin : 'layui-layer-molv',
+					area : [ '750px', '500px' ],
+					shadeClose:true,//设置是否点击遮罩关闭
+					maxmin:true,//设置是否显示最大化和最小化的按钮
+					resize:true,//设置是否支持拉伸缩小放大  默认为true
+					success: function(layero, index){   //弹出成功之后的回调方法
+						//清空表单里面的数据
+						$("#dataFrm")[0].reset();
+						url="/sys/bills/addBill";
+					}
+				});
+			}
+
+			//打开修改页面
+			function openUpdateBill(data){
+				index = layer.open({
+					type : 1,
+					title : '修改记账',
+					content : $("#addOrUpdateDiv"),
+					skin : 'layui-layer-molv',
+					area : [ '750px', '500px' ],
+					shadeClose:true,//设置是否点击遮罩关闭
+					maxmin:true,//设置是否显示最大化和最小化的按钮
+					resize:true,//设置是否支持拉伸缩小放大  默认为true
+					success: function(layero, index){   //弹出成功之后的回调方法
+						//清空表单里面的数据
+						$("#dataFrm")[0].reset();
+						//装载默认数据
+						form.val("dataFrm",data);
+						form.val("dataFrm",{typeid:data.typeid+""});
+						url="/sys/bills/updateBill";
+					}
+				});
+			}
+
+
+
+			//监听添加修改的保存事件
+			form.on("submit(doSubmit)",function(data){
+				var params=$("#dataFrm").serialize();
+				$.post(url+"?"+params,function(obj){
+					layer.msg(obj.msg);
+					if(obj.code==200){
+						//刷新数据表格
+						tableIns.reload();
+						//关闭弹出层
+						layer.close(index);
+					}
+				});
+				return false;
+			});
+
+
+			//删除记账
+			function deleteBill(data) {
+				//判断当前菜单有没有子节点
+				layer.confirm('是否要删除【'+data.name+'】这个记账?', {icon: 3, title:'提示'}, function(num){
+					$.post("/sys/bills/deleteBill",{id:data.id},function(obj){
+						layer.msg(obj.msg);
+						if(obj.code==200){
+							//刷新数据表格
+							tableIns.reload();
+						}
+						layer.close(num);
+					});
+				});
+			}
+
+
+		//初始化查询表单的类型下拉框
+        initSearchTypeSelect($("#typeid"));//搜索的下拉数据初始化
+		function initSearchTypeSelect(elem){
+			$.get("/sys/type/loadAllType",function(obj){
+				var html="<option value=''>请选择类型</option>";
+				for(var i=0;i<obj.length;i++){
+					html+="<option value="+obj[i].id+">"+obj[i].typename+"</option>";
+				};
+				elem.html(html);
+				form.render("select");
+			});
+		}
+
+		//初始化单选框
+		selectradio($("#dddd"));
+		function selectradio(elem){
+			$.post("/sys/type/loadAllType",function(obj){
+				var html="";
+				for(var i=0;i<obj.length;i++){
+					var o=obj[i];
+					if(o.id==1){
+						html+="<input type='radio'  value="+o.id+" checked=''  title="+o.typename+" name='typeid'/>";
+					}else{
+						html+="<input type='radio'  value="+o.id+"  title="+o.typename+" name='typeid'/>";
+					}
+				};
+				elem.html(html);
+				form.render();
+			});
+		}
+
+
+	});
+
+	</script>
+</body>
+</html>
